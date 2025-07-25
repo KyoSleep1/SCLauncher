@@ -1,7 +1,7 @@
 name: Launcher Build
+
 permissions:
   contents: write
-  releases: write
 
 on:
   push:
@@ -10,12 +10,21 @@ on:
 jobs:
   create-release:
     runs-on: ubuntu-latest
+
     steps:
       - name: Checkout
         uses: actions/checkout@v3
 
       - name: Get version
         run: echo "version=$(jq -r .version package.json)" >> $GITHUB_ENV
+
+      - name: Determine if prerelease
+        run: |
+          if [[ "$version" == *beta* || "$version" == *alpha* ]]; then
+            echo "is_prerelease=true" >> $GITHUB_ENV
+          else
+            echo "is_prerelease=false" >> $GITHUB_ENV
+          fi
 
       - name: Create Release
         id: create_release
@@ -26,7 +35,7 @@ jobs:
           tag_name: ${{ env.version }}
           release_name: release ${{ env.version }}
           draft: false
-          prerelease: ${{ contains(env.version, 'beta') || contains(env.version, 'alpha') }}
+          prerelease: ${{ env.is_prerelease }}
 
   build-launcher:
     needs: create-release
