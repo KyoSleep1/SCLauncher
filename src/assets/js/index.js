@@ -30,9 +30,7 @@ class Splash {
 
     async startAnimation() {
         let splashes = [
-            { "message": "I... live...", "author": "Luuxis" },
-                    { "message": "Hello I am from the code.", "author": "Luuxis" },
-        { "message": "Linux is not an os, but a kernel.", "author": "Luuxis" }
+            { "message": "Remember to read the rules", "author": "NovaLauncher" }
         ];
         let splash = splashes[Math.floor(Math.random() * splashes.length)];
         this.splashMessage.textContent = splash.message;
@@ -47,7 +45,7 @@ class Splash {
         this.splashAuthor.classList.add("opacity");
         this.message.classList.add("opacity");
         await sleep(1000);
-        this.checkUpdate();
+        this.maintenanceCheck();
     }
 
     async checkUpdate() {
