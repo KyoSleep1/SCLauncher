@@ -1,7 +1,7 @@
 {
     "name": "NovaLauncher",
     "preductname": "Nova Launcher",
-    "version": "1.0.2",
+    "version": "1.0.3",
     "description": "Launcher de Minecraft creado para NovaStudio",
     "main": "src/app.js",
     "author": {
