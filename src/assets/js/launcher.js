@@ -137,6 +137,11 @@ class Launcher {
         if (accounts?.length) {
             for (let account of accounts) {
                 let account_ID = account.ID
+                if (configClient?.accounts && accounts.length !== configClient.accounts.length) {
+                    await this.db.deleteData('accounts', account_ID)
+                    continue
+                }
+
                 if (account.error) {
                     await this.db.deleteData('accounts', account_ID)
                     continue

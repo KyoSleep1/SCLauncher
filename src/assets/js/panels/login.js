@@ -20,7 +20,7 @@ class Login {
                 this.getAZauth();
             }
         }
-        
+
         document.querySelector('.cancel-home').addEventListener('click', () => {
             document.querySelector('.cancel-home').style.display = 'none'
             changePanel('settings')
@@ -36,28 +36,43 @@ class Login {
 
         microsoftBtn.addEventListener("click", () => {
             popupLogin.openPopup({
-                title: 'Connexion',
-                content: 'Veuillez patienter...',
+                title: 'Connecting to Microsoft',
+                content: 'This may take a few minutes.',
                 color: 'var(--color)'
             });
 
             ipcRenderer.invoke('Microsoft-window', this.config.client_id).then(async account_connect => {
-                if (account_connect == 'cancel' || !account_connect) {
+                console.log(account_connect);
+
+                if (account_connect === 'cancel' || !account_connect) {
                     popupLogin.closePopup();
                     return;
-                } else {
-                    await this.saveData(account_connect)
-                    popupLogin.closePopup();
                 }
+
+                if (account_connect.error) {
+                    popupLogin.openPopup({
+                        title: 'Microsoft Error',
+                        content: `Failed to log-in with Microsoft. Try again later. '${account_connect.error}'`,
+                        color: 'red',
+                        options: true
+                    });
+                    console.error(`[MS-Login] ${account_connect.path}: ${account_connect.errorType} - ${account_connect.error}`);
+                    return;
+                }
+
+                await this.saveData(account_connect);
+                popupLogin.closePopup();
 
             }).catch(err => {
                 popupLogin.openPopup({
-                    title: 'Erreur',
-                    content: err,
+                    title: 'Error',
+                    content: err.message || err,
+                    color: 'red',
                     options: true
                 });
+                console.error('[MS-Login Catch]', err);
             });
-        })
+        });
     }
 
     async getCrack() {
