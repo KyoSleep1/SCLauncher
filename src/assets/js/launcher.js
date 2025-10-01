@@ -107,12 +107,15 @@ class Launcher {
                     }
                 },
                 launcher_config: {
-                    download_multi: 5,
+                    download_multi: 30,
                     theme: 'auto',
                     closeLauncher: 'close-launcher',
                     intelEnabledMac: true
                 }
             })
+        } else {
+            configClient.download_multi = configClient.download_multi == 30 ? configClient.download_multi : 30
+            await this.db.updateData('configClient', configClient)
         }
     }
 
@@ -149,7 +152,7 @@ class Launcher {
                 if (account.meta.type === 'Xbox') {
                     console.log(`Account Type: ${account.meta.type} | Username: ${account.name}`);
                     popupRefresh.openPopup({
-                        title: 'Connexion',
+                        title: 'Connecting... If this process takes too long, reopen the launcher',
                         content: `Refresh account Type: ${account.meta.type} | Username: ${account.name}`,
                         color: 'var(--color)',
                         background: false
@@ -174,7 +177,7 @@ class Launcher {
                 } else if (account.meta.type == 'AZauth') {
                     console.log(`Account Type: ${account.meta.type} | Username: ${account.name}`);
                     popupRefresh.openPopup({
-                        title: 'Connexion',
+                        title: 'Connecting... If this process takes too long, reopen the launcher',
                         content: `Refresh account Type: ${account.meta.type} | Username: ${account.name}`,
                         color: 'var(--color)',
                         background: false
@@ -198,7 +201,7 @@ class Launcher {
                 } else if (account.meta.type == 'Mojang') {
                     console.log(`Account Type: ${account.meta.type} | Username: ${account.name}`);
                     popupRefresh.openPopup({
-                        title: 'Connexion',
+                        title: 'Connecting... If this process takes too long, reopen the launcher',
                         content: `Refresh account Type: ${account.meta.type} | Username: ${account.name}`,
                         color: 'var(--color)',
                         background: false
