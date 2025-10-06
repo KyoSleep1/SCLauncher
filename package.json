@@ -1,7 +1,7 @@
 {
     "name": "NovaLauncher",
     "preductname": "Nova Launcher",
-    "version": "1.0.6",
+    "version": "1.0.7",
     "description": "Launcher de Minecraft creado para NovaStudio",
     "main": "src/app.js",
     "author": {
@@ -14,7 +14,8 @@
         "start": "cross-env-shell NODE_ENV=dev electron .",
         "dev": "cross-env-shell DEV_TOOL=open nodemon --exec npm start",
         "build": "node build.js --obf=true --build=platform",
-        "icon": "node build.js --icon=https://raw.githubusercontent.com/luuxis/Selvania-Launcher/master/src/assets/images/icon.png"
+        "icon": "node build.js --icon=https://raw.githubusercontent.com/luuxis/Selvania-Launcher/master/src/assets/images/icon.png",
+        "postinstall": "patch-package"
     },
     "license": "CCANC",
     "nodemonConfig": {
@@ -35,7 +36,9 @@
         "javascript-obfuscator": "^4.1.0",
         "jimp": "^0.22.12",
         "nodemon": "^3.1.2",
-        "png2icons": "^2.0.1"
+        "patch-package": "^8.0.1",
+        "png2icons": "^2.0.1",
+        "postinstall-postinstall": "^2.1.0"
     },
     "repository": {
         "type": "git",

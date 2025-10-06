@@ -1,0 +1,181 @@
+diff --git a/node_modules/minecraft-java-core/build/utils/Downloader.js b/node_modules/minecraft-java-core/build/utils/Downloader.js
+index 1487c7d..bf89d1b 100644
+--- a/node_modules/minecraft-java-core/build/utils/Downloader.js
++++ b/node_modules/minecraft-java-core/build/utils/Downloader.js
+@@ -10,6 +10,7 @@ Object.defineProperty(exports, "__esModule", { value: true });
+ const fs_1 = __importDefault(require("fs"));
+ const events_1 = require("events");
+ const Index_js_1 = require("./Index.js");
++
+ /**
+  * A class responsible for downloading single or multiple files,
+  * emitting events for progress, speed, estimated time, and errors.
+@@ -27,23 +28,27 @@ class Downloader extends events_1.EventEmitter {
+         if (!fs_1.default.existsSync(dirPath)) {
+             fs_1.default.mkdirSync(dirPath, { recursive: true });
+         }
++
+         const writer = fs_1.default.createWriteStream(`${dirPath}/${fileName}`);
+         const response = await fetch(url);
+         const contentLength = response.headers.get('content-length');
+         const totalSize = contentLength ? parseInt(contentLength, 10) : 0;
+         let downloaded = 0;
++
+         return new Promise((resolve, reject) => {
+             const body = (0, Index_js_1.fromAnyReadable)(response.body);
++
+             body.on('data', (chunk) => {
+                 downloaded += chunk.length;
+-                // Emit progress with the current number of bytes vs. total size
+                 this.emit('progress', downloaded, totalSize);
+                 writer.write(chunk);
+             });
++
+             body.on('end', () => {
+                 writer.end();
+                 resolve();
+             });
++
+             body.on('error', (err) => {
+                 writer.destroy();
+                 this.emit('error', err);
+@@ -51,6 +56,7 @@ class Downloader extends events_1.EventEmitter {
+             });
+         });
+     }
++
+     /**
+      * Downloads multiple files concurrently (up to the specified limit).
+      * Emits "progress" events with cumulative bytes downloaded vs. total size,
+@@ -64,17 +70,18 @@ class Downloader extends events_1.EventEmitter {
+     async downloadFileMultiple(files, size, limit = 1, timeout = 10000) {
+         if (limit > files.length)
+             limit = files.length;
+-        let completed = 0; // Number of downloads completed
+-        let downloaded = 0; // Cumulative bytes downloaded
+-        let queued = 0; // Index of the next file to download
++
++        let completed = 0;
++        let downloaded = 0;
++        let queued = 0;
+         let start = Date.now();
+         let before = 0;
+         const speeds = [];
++
+         const estimated = setInterval(() => {
+             const duration = (Date.now() - start) / 1000;
+             const chunkDownloaded = downloaded - before;
+-            if (speeds.length >= 5)
+-                speeds.shift();
++            if (speeds.length >= 5) speeds.shift();
+             speeds.push(chunkDownloaded / duration);
+             const avgSpeed = speeds.reduce((a, b) => a + b, 0) / speeds.length;
+             this.emit('speed', avgSpeed);
+@@ -83,50 +90,70 @@ class Downloader extends events_1.EventEmitter {
+             start = Date.now();
+             before = downloaded;
+         }, 500);
++
+         const downloadNext = async () => {
+-            if (queued >= files.length)
+-                return;
++            if (queued >= files.length) return;
++
+             const file = files[queued++];
+             if (!fs_1.default.existsSync(file.folder)) {
+                 fs_1.default.mkdirSync(file.folder, { recursive: true, mode: 0o777 });
+             }
++
+             const writer = fs_1.default.createWriteStream(file.path, { flags: 'w', mode: 0o777 });
+             const controller = new AbortController();
+             const timeoutId = setTimeout(() => controller.abort(), timeout);
++
+             try {
+                 const response = await fetch(file.url, { signal: controller.signal });
+                 clearTimeout(timeoutId);
++
+                 const stream = (0, Index_js_1.fromAnyReadable)(response.body);
+                 stream.on('data', (chunk) => {
+                     downloaded += chunk.length;
+                     this.emit('progress', downloaded, size, file.type);
+                     writer.write(chunk);
+                 });
++
+                 stream.on('end', () => {
+                     writer.end();
+                     completed++;
+                     downloadNext();
+                 });
++
+                 stream.on('error', (err) => {
+                     writer.destroy();
+                     this.emit('error', err);
+                     completed++;
+                     downloadNext();
+                 });
+-            }
+-            catch (e) {
++            } catch (e) {
+                 clearTimeout(timeoutId);
+                 writer.destroy();
+-                this.emit('error', e);
++
++                // 🩹 FIX: ignore timeout/abort errors silently (no GUI emission)
++                const isAbort =
++                    e?.name === 'AbortError' ||
++                    (typeof DOMException !== 'undefined' &&
++                        e instanceof DOMException &&
++                        e.message.includes('aborted'));
++
++                if (!isAbort) {
++                    this.emit('error', e);
++                } else {
++                    console.warn(`[Downloader] Skipped aborted download: ${file.url}`);
++                }
++
+                 completed++;
+                 downloadNext();
+             }
+         };
+-        // Start "limit" concurrent downloads
++
++        // Start concurrent downloads
+         for (let i = 0; i < limit; i++) {
+             downloadNext();
+         }
+-        // Wait until all downloads complete
++
++        // Wait for all downloads
+         return new Promise((resolve) => {
+             const interval = setInterval(() => {
+                 if (completed === files.length) {
+@@ -137,6 +164,7 @@ class Downloader extends events_1.EventEmitter {
+             }, 100);
+         });
+     }
++
+     /**
+      * Performs a HEAD request on the given URL to check if it is valid (status=200)
+      * and retrieves the "content-length" if available.
+@@ -160,12 +188,12 @@ class Downloader extends events_1.EventEmitter {
+                 return { size, status: 200 };
+             }
+             return false;
+-        }
+-        catch (e) {
++        } catch (e) {
+             clearTimeout(timeoutId);
+             return false;
+         }
+     }
++
+     /**
+      * Tries each mirror in turn, constructing an URL (mirror + baseURL). If a valid
+      * response is found (status=200), it returns the final URL and size. Otherwise, returns false.
+@@ -189,5 +217,6 @@ class Downloader extends events_1.EventEmitter {
+         return false;
+     }
+ }
++
+ exports.default = Downloader;
+ //# sourceMappingURL=Downloader.js.map
